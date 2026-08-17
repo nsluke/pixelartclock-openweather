@@ -324,6 +324,14 @@ def main(config):
 
     clock_color = clock_colors[weather]
     twelve_hour = (config.get("clockFormat", "24") == "12")
+    blink_colon = config.bool("blinkColon", True)
+    colon_dots = render.Column(
+        children = [
+            render.Box(width = 3 * SCALE, height = 2 * SCALE, color = clock_color),
+            render.Box(width = 3 * SCALE, height = 3 * SCALE),
+            render.Box(width = 3 * SCALE, height = 2 * SCALE, color = clock_color),
+        ],
+    )
     clock_children = [
         render.Box(
             child = render.Text(
@@ -340,16 +348,10 @@ def main(config):
             height = 7 * SCALE,
             child = render.Animation(
                 children = [
-                    render.Column(
-                        children = [
-                            render.Box(width = 3 * SCALE, height = 2 * SCALE, color = clock_color),
-                            render.Box(width = 3 * SCALE, height = 3 * SCALE),
-                            render.Box(width = 3 * SCALE, height = 2 * SCALE, color = clock_color),
-                        ],
-                    ),
+                    colon_dots,
                     render.Box(width = 3 * SCALE, height = 7 * SCALE),
                 ],
-            ),
+            ) if blink_colon else colon_dots,
         ),
         render.Box(
             child = render.Text(
@@ -471,6 +473,13 @@ def get_schema():
                 icon = "clock",
                 default = clockFormatOptions[0].value,
                 options = clockFormatOptions,
+            ),
+            schema.Toggle(
+                id = "blinkColon",
+                name = "Blinking colon",
+                desc = "Whether the clock's colon blinks",
+                icon = "clock",
+                default = True,
             ),
             schema.Dropdown(
                 id = "tempUnits",
