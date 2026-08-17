@@ -323,49 +323,75 @@ def main(config):
     )
 
     clock_color = clock_colors[weather]
+    twelve_hour = (config.get("clockFormat", "24") == "12")
+    clock_children = [
+        render.Box(
+            child = render.Text(
+                # 12-hour mode drops the leading zero, clock-style
+                content = now.format("3" if twelve_hour else "15"),
+                font = CLOCK_FONT,
+                color = clock_color,
+            ),
+            width = 18 * SCALE,
+            height = 14 * SCALE,
+        ),
+        render.Box(
+            width = 9 * SCALE,
+            height = 7 * SCALE,
+            child = render.Animation(
+                children = [
+                    render.Column(
+                        children = [
+                            render.Box(width = 3 * SCALE, height = 2 * SCALE, color = clock_color),
+                            render.Box(width = 3 * SCALE, height = 3 * SCALE),
+                            render.Box(width = 3 * SCALE, height = 2 * SCALE, color = clock_color),
+                        ],
+                    ),
+                    render.Box(width = 3 * SCALE, height = 7 * SCALE),
+                ],
+            ),
+        ),
+        render.Box(
+            child = render.Text(
+                content = now.format("04"),
+                font = CLOCK_FONT,
+                color = clock_color,
+            ),
+            width = 19 * SCALE,
+            height = 14 * SCALE,
+        ),
+    ]
     clock = render.Box(
         width = 45 * SCALE,
         height = 15 * SCALE,
         child = render.Row(
-            children = [
-                render.Box(
-                    child = render.Text(
-                        content = now.format("15"),
-                        font = CLOCK_FONT,
-                        color = clock_color,
-                    ),
-                    width = 18 * SCALE,
-                    height = 14 * SCALE,
-                ),
-                render.Box(
-                    width = 9 * SCALE,
-                    height = 7 * SCALE,
-                    child = render.Animation(
-                        children = [
-                            render.Column(
-                                children = [
-                                    render.Box(width = 3 * SCALE, height = 2 * SCALE, color = clock_color),
-                                    render.Box(width = 3 * SCALE, height = 3 * SCALE),
-                                    render.Box(width = 3 * SCALE, height = 2 * SCALE, color = clock_color),
-                                ],
-                            ),
-                            render.Box(width = 3 * SCALE, height = 7 * SCALE),
-                        ],
-                    ),
-                ),
-                render.Box(
-                    child = render.Text(
-                        content = now.format("04"),
-                        font = CLOCK_FONT,
-                        color = clock_color,
-                    ),
-                    width = 19 * SCALE,
-                    height = 14 * SCALE,
-                ),
-            ],
+            children = clock_children,
             cross_align = "center",
         ),
     )
+    if twelve_hour:
+        # AM/PM sits under the minutes, alarm-clock style, so it stays
+        # clear of the top-right art (e.g. the sun) on 64-wide displays
+        clock = render.Column(
+            children = [
+                clock,
+                render.Box(
+                    width = 45 * SCALE,
+                    height = 7 * SCALE,
+                    child = render.Row(
+                        children = [
+                            render.Text(
+                                content = now.format("PM"),
+                                font = TEMP_FONT,
+                                color = clock_color,
+                            ),
+                        ],
+                        main_align = "end",
+                        expanded = True,
+                    ),
+                ),
+            ],
+        )
 
     # illustration
     illustration = illustrations[weather]
@@ -409,6 +435,16 @@ def get_schema():
             value = "C",
         ),
     ]
+    clockFormatOptions = [
+        schema.Option(
+            display = "24-hour",
+            value = "24",
+        ),
+        schema.Option(
+            display = "12-hour with AM/PM",
+            value = "12",
+        ),
+    ]
     return schema.Schema(
         version = "1",
         fields = [
@@ -427,6 +463,14 @@ def get_schema():
                 name = "Location",
                 desc = "Location for the weather forecast and clock timezone",
                 icon = "locationDot",
+            ),
+            schema.Dropdown(
+                id = "clockFormat",
+                name = "Clock format",
+                desc = "24-hour or 12-hour time",
+                icon = "clock",
+                default = clockFormatOptions[0].value,
+                options = clockFormatOptions,
             ),
             schema.Dropdown(
                 id = "tempUnits",
